@@ -10,8 +10,8 @@ class Post(Base):
     __tablename__ = "posts"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    title: Mapped[str] = mapped_column(String, nullable=False)
-    body: Mapped[str] = mapped_column(Text)
+    title: Mapped[str] = mapped_column(String(60), nullable=False)
+    body: Mapped[str] = mapped_column(Text(2000), nullable=False)
     created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime, insert_default=func.now()
     )
