@@ -14,8 +14,13 @@ class PostBase(BaseModel):
 class PostCreate(PostBase):
     section_id: int
 
+class PostPut(PostBase):
+    title: Annotated[str, Field(..., max_length=60)]
+    body: str
+    section_id: int
+    tags: list[str]
 
-class PostUpdate(PostBase):
+class PostPatch(PostBase):
     title: Annotated[Union[str, None], Field(max_length=60)] = None
     body: Union[str, None] = None
     section_id: Union[int, None] = None

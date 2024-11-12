@@ -1,20 +1,18 @@
-from typing import Optional
+from typing import Optional, Union
 from sqlalchemy.orm import Session
 from sqlalchemy import select, or_
-
-import crud.sections
 from crud.sections import get_section
 from crud.tags import get_or_create_tags
-from exceptions import DbnotFoundException
+from exceptions import ModelNotFoundException
 from models.posts import Post
 from models.tags import Tag
-from schemas.posts import FilterPosts, PostCreate, PostUpdate
+from schemas.posts import FilterPosts, PostCreate, PostPut, PostPatch
 
 
 def get_post(db: Session, post_id: int) -> Post:
     post = db.get(Post, post_id)
     if not post:
-        raise DbnotFoundException
+        raise ModelNotFoundException("Post", post_id)
     return post
 
 
@@ -30,11 +28,12 @@ def list_posts(db: Session, filters: Optional[FilterPosts] = None) -> list[Post]
             query = query.where(Post.created_at <= filters.created_at_lt)
         if filters.tags:
             query = query.where(Post.tags.any(or_(*[Tag.name == tag for tag in filters.tags])))
-        if filters.section_id:
-            if not get_section(db, filters.section_id):
-                raise DbnotFoundException
-            query = query.where(Post.section_id == filters.section_id)
-    return db.scalars(query).all()
+        if filters.section_id is not None:
+            try: section = get_section(db, filters.section_id)
+            except ModelNotFoundException:
+                raise ModelNotFoundException("Section", filters.section_id)
+            query = query.where(Post.section_id == section.id)
+    return list(db.scalars(query).all())
 
 
 def create_post(db: Session, post_data: PostCreate) -> Post:
@@ -51,8 +50,11 @@ def create_post(db: Session, post_data: PostCreate) -> Post:
     return new_post
 
 
-def update_post(db: Session, post_id: int, post_data: PostUpdate) -> Post:
+def update_post(db: Session, post_id: int, post_data: Union[PostPut, PostPatch]) -> Union[Post, dict]:
     post_being_updated = get_post(db, post_id)
+
+    try: section = get_section(db, post_data.section_id)
+    except ModelNotFoundException as e: raise e
 
     update_data = post_data.model_dump(exclude_unset=True, exclude={"tags"})
 

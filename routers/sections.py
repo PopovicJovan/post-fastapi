@@ -1,6 +1,6 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 import crud.sections as sections
-from exceptions import DbnotFoundException, SectionInUseError
+from exceptions import ModelInUseError, ModelNotFoundException
 from schemas.sections import Section, SectionCreate, SectionUpdate
 from database import db
 
@@ -16,8 +16,8 @@ def list_sections(db: db):
 def get_section(section_id: int, db: db):
     try:
         return sections.get_section(db, section_id)
-    except DbnotFoundException:
-        raise HTTPException(status_code=404, detail=f"Section {section_id} not found!!")
+    except ModelNotFoundException as e:
+        raise e
 
 
 @router.post("", response_model=Section, status_code=201)
@@ -34,8 +34,8 @@ def update_section(section_id: int, section: SectionUpdate, db: db):
         section = sections.update_section(db, section_id, section)
         db.commit()
         return section
-    except DbnotFoundException:
-        raise HTTPException(status_code=404, detail=f"Section {section_id} not found!!")
+    except ModelNotFoundException as e:
+        raise e
 
 
 @router.delete("/{section_id}", status_code=204)
@@ -43,7 +43,7 @@ def delete_section(section_id: int, db: db):
     try:
         sections.delete_section(db, section_id)
         db.commit()
-    except SectionInUseError:
-        raise HTTPException(
-            status_code=400, detail="Cannot delete a section that has associated posts"
-        )
+    except ModelInUseError as e:
+        raise e
+    except ModelNotFoundException as e:
+        raise e

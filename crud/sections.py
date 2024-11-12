@@ -1,6 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from exceptions import DbnotFoundException, SectionInUseError
+from exceptions import ModelInUseError, ModelNotFoundException
 from models.posts import Post
 from models.sections import Section
 from models.tags import Tag
@@ -10,7 +10,7 @@ from schemas.sections import SectionCreate, SectionUpdate
 def get_section(db: Session, section_id: int) -> Section:
     section = db.get(Section, section_id)
     if not section:
-        raise DbnotFoundException
+        raise ModelNotFoundException("Section", section_id)
     return section
 
 
@@ -27,7 +27,9 @@ def create_section(db: Session, section_data: SectionCreate) -> Section:
 def update_section(
     db: Session, section_id: int, section_data: SectionUpdate
 ) -> Section:
-    section_being_updated = get_section(db, section_id)
+    try: section_being_updated = get_section(db, section_id)
+    except ModelNotFoundException as e:
+        raise e
     update_data = section_data.model_dump(exclude_unset=True)
 
     for key, value in update_data.items():
@@ -37,12 +39,14 @@ def update_section(
 
 
 def delete_section(db: Session, section_id: int) -> None:
-    # Check if there is any Post associated with this Section
-    query = select(Post).where(Post.section_id == section_id)
+    try: section = get_section(db, section_id)
+    except ModelNotFoundException as e:
+        raise e
+    query = select(Post).where(Post.section_id == section.id)
     post = db.scalar(query)
 
     if post:
-        raise SectionInUseError
+        raise ModelInUseError("Section", section.id)
 
     section = get_section(db, section_id)
     db.delete(section)
