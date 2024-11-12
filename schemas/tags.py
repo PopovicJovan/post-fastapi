@@ -1,6 +1,5 @@
 from typing import Annotated, Optional
-
-from pydantic import BaseModel, ConfigDict, Field, field_serializer
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class TagBase(BaseModel):
@@ -13,6 +12,11 @@ class TagCreate(TagBase):
 
 class Tag(TagBase):
     id: int
-    posts_count: Optional[int]
+    model_config = ConfigDict(from_attributes=True)
+
+
+class TagWithPostsCount(TagBase):
+    id: int
+    posts_count: Optional[int] = None
 
     model_config = ConfigDict(from_attributes=True)

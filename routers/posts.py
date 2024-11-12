@@ -10,7 +10,10 @@ router = APIRouter(prefix="/posts", tags=["posts"])
 
 @router.get("", response_model=list[Post])
 def list_posts(db: db, filters: Annotated[FilterPosts, Query()]):
-    return posts.list_posts(db, filters)
+    try:
+        return posts.list_posts(db, filters)
+    except DbnotFoundException:
+        return HTTPException(status_code=404, detail="Section does not exist")
 
 
 @router.get("/{post_id}", response_model=Post)

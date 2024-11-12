@@ -1,6 +1,6 @@
-from sqlalchemy import select
-from models.tags import Tag
-from schemas.tags import Tag as TagSchema
+from sqlalchemy import select, func
+from models.tags import Tag, post_tags
+from schemas.tags import Tag as TagSchema, TagWithPostsCount
 from sqlalchemy.orm import Session
 
 
@@ -19,15 +19,18 @@ def get_or_create_tags(db: Session, tag_names: list[str]) -> list[Tag]:
     return existing_tags + new_tags
 
 
-def get_all_tags(db: Session) -> list[TagSchema]:
-    query = select(Tag)
-    result = db.scalars(query).all()
+def get_all_tags(db: Session) -> list[TagWithPostsCount]:
+    results = (
+        db.query(Tag.id, Tag.name, func.count(post_tags.c.post_id).label("posts_count"))
+        .join(post_tags, Tag.id == post_tags.c.tag_id)
+        .group_by(Tag.id)
+        .all()
+    )
 
-    tags_with_post_count = [
-        TagSchema(
-            id=tag.id, name=tag.name,
-            posts_count=len(tag.posts)
-        ) for tag in result
+    return [
+        TagWithPostsCount(
+            id=tag.id,
+            name=tag.name,
+            posts_count=tag.posts_count
+        ) for tag in results
     ]
-
-    return tags_with_post_count
