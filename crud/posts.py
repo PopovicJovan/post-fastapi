@@ -53,8 +53,9 @@ def create_post(db: Session, post_data: PostCreate) -> Post:
 def update_post(db: Session, post_id: int, post_data: Union[PostPut, PostPatch]) -> Union[Post, dict]:
     post_being_updated = get_post(db, post_id)
 
-    try: section = get_section(db, post_data.section_id)
-    except ModelNotFoundException as e: raise e
+    if post_data.section_id is not None:
+        try: section = get_section(db, post_data.section_id)
+        except ModelNotFoundException as e: raise e
 
     update_data = post_data.model_dump(exclude_unset=True, exclude={"tags"})
 
