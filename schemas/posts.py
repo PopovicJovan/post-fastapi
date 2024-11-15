@@ -1,8 +1,9 @@
 from datetime import datetime
-from typing import Annotated, Union
+from typing import Annotated, Union, Optional
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from schemas.sections import Section
 from schemas.tags import Tag
+from fastapi import UploadFile, File
 
 
 class PostBase(BaseModel):
@@ -32,6 +33,7 @@ class Post(PostBase):
     created_at: datetime
     updated_at: Union[datetime, None] = None
     section: Section
+    image: Optional[str]
     tags: list[Tag] = []
 
     model_config = ConfigDict(from_attributes=True)

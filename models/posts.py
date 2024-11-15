@@ -12,6 +12,7 @@ class Post(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     title: Mapped[str] = mapped_column(String(60), nullable=False)
     body: Mapped[str] = mapped_column(Text(2000), nullable=False)
+    image: Mapped[str] = mapped_column(String(60), nullable=True)
     created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime, insert_default=func.now()
     )

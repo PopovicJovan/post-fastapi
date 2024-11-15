@@ -1,4 +1,5 @@
 from typing import Optional, Union
+from fastapi import UploadFile
 from sqlalchemy.orm import Session
 from sqlalchemy import select, or_
 from crud.sections import get_section
@@ -7,7 +8,9 @@ from exceptions import ModelNotFoundException
 from models.posts import Post
 from models.tags import Tag
 from schemas.posts import FilterPosts, PostCreate, PostPut, PostPatch
+from uuid import uuid4
 
+IMAGE_DIR = "public/images/posts/"
 
 def get_post(db: Session, post_id: int) -> Post:
     post = db.get(Post, post_id)
@@ -50,12 +53,21 @@ def create_post(db: Session, post_data: PostCreate) -> Post:
     return new_post
 
 
+def upload_image(db: Session, image: UploadFile, post_id: int) -> None:
+    post = get_post(db, post_id)
+    image.filename = str(uuid4())
+    post.image = image.filename
+    contents = image.file.read()
+    with open(f"{IMAGE_DIR}{post.image}.jpg", "wb") as f:
+        f.write(contents)
+        f.flush()
+        f.close()
+
 def update_post(db: Session, post_id: int, post_data: Union[PostPut, PostPatch]) -> Union[Post, dict]:
     post_being_updated = get_post(db, post_id)
 
     if post_data.section_id is not None:
-        try: section = get_section(db, post_data.section_id)
-        except ModelNotFoundException as e: raise e
+        section = get_section(db, post_data.section_id)
 
     update_data = post_data.model_dump(exclude_unset=True, exclude={"tags"})
 
